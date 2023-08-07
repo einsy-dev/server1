@@ -5,6 +5,7 @@ const router = require('./routes/index')
 const mongoose = require('mongoose');
 const path = require('path');
 const fileUpload = require('express-fileupload');
+const { MONGO_URL } = require('./utils/config.js');
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,7 +20,7 @@ app.use('/', router);
 
 const start = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URL)
+        await mongoose.connect(MONGO_URL)
         await app.listen(PORT, () => { console.log(`Server is running on port ${PORT}`); });
     } catch (error) {
         console.log(error);
