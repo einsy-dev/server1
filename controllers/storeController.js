@@ -1,38 +1,43 @@
-const Store = require('../models/Store');
-const LightStore = require('../models/LightStore');
+const Item = require('../models/Item');
 const path = require('path');
 const uuid = require('uuid');
+const fs = require('fs')
 
 class StoreController {
     async getAll(req, res) {
         try {
             const { category, page } = req.query;
 
+            let data, limitPage;
+
             if (category === 'All') {
-
-                const data = await LightStore.find().limit(8).skip((page - 1) * 8)
-                const limitPage = Math.ceil(await LightStore.countDocuments() / 8);
-
-                return res.status(200).json({ data, limitPage });
+                data = await Item.find().limit(8).skip((page - 1) * 8)
+                limitPage = Math.ceil(await Item.countDocuments() / 8);
+            }
+            else {
+                data = await Item.find({ category: category }).limit(8).skip((page - 1) * 8)
+                limitPage = Math.ceil(await Item.countDocuments({ category: category }) / 8);
             }
 
-            res.status(200).json('KJWGWEJEGW');
+            res.status(200).json({ data, limitPage });
         } catch (error) {
             console.log(error)
             res.status(400).json('Ошибка на сервере')
         }
-
     }
 
     async getOne(req, res) {
-        const { id } = req.params;
+        try {
+            const { id } = req.params;
 
-        if (!id) {
-            return res.status(400).json('Заполните все поля')
+            if (!id) return res.status(400).json('Ошибка на сервере')
+
+            const data = await Item.findOne({ _id: id });
+            return res.status(200).send(data);
+        } catch (error) {
+            console.log(error)
+            res.status(400).json('Ошибка на сервере')
         }
-
-        const data = await Store.findOne({ id: id })
-        return res.status(200).send(data);
     }
 
     async create(req, res) {
@@ -42,31 +47,45 @@ class StoreController {
             const file = req.files['file[]'];
             const images = [];
 
-
             if (!title, !price, !description, !specs, !category) {
                 return res.status(400).json('Заполните все поля')
             }
 
             file.map(el => {
-                let fileName = uuid.v4() + ".jpg"
+                const fileName = uuid.v4() + ".jpg"
                 images.push(fileName)
                 el.mv(path.resolve(__dirname, '..', 'static/images', fileName))
             })
 
-
-            const id = uuid.v4();
-            const shortDescription = description.substring(0, 80);
-
-            const newStoreItem = new Store({ id: id, title: title, price: price, description: description, specs: specs, category: category, images: images });
-            const newLightStoreItem = new LightStore({ id: id, title: title, price: price, description: shortDescription, images: images[0] });
+            const newStoreItem = new Item({ title: title, price: price, description: description, specs: specs, category: category, images: images });
             newStoreItem.save()
-            newLightStoreItem.save()
 
-            res.status(200).json('All right')
+            res.status(200).json('Item created')
 
         } catch (error) {
             console.log(error)
-            return res.status(400).json('Ошибка на сервере')
+            res.status(400).json('Ошибка на сервере')
+        }
+    }
+
+    async delete(req, res) {
+        try {
+            const { id } = req.body;
+            const element = Item.findOne({ _id: id })
+            element.images?.map(el => fs.unlink(el))
+            element.deleteOne()
+            res.status(200).json('Item deleted')
+        } catch (error) {
+            console.log(error)
+            res.status(400).json('Ошибка на сервере')
+        }
+    }
+
+    async update(req, res) {
+        try {
+
+        } catch (error) {
+
         }
     }
 }

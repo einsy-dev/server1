@@ -1,6 +1,6 @@
 const User = require('../models/User');
-const LightStore = require('../models/LightStore');
-const Order = require('../models/Orders');
+const Item = require('../models/Item');
+const Order = require('../models/Order');
 const { SECRET_KEY } = require('./../utils/config');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -24,17 +24,17 @@ class UserController {
         try {
             const { email, password } = req.body;
             if (!email || !password) {
-                return res.status(400).json({ message: 'Please fill in all fields' });
+                return res.status(400).json('Please fill in all fields');
             }
 
             const user = await User.findOne({ email });
             if (!user) {
-                return res.status(400).json({ message: 'User not found' });
+                return res.status(400).json('User not found');
             }
 
             const isPasswordCorrect = await bcrypt.compare(password, user.password);
             if (!isPasswordCorrect) {
-                return res.status(400).json({ message: 'Invalid password' });
+                return res.status(400).json('Invalid password');
             }
 
             const token = generateJwt(user._id, user.email, user.role);
@@ -51,12 +51,12 @@ class UserController {
         try {
             const { name, email, password } = req.body;
             if (!name || !email || !password) {
-                return res.status(400).json({ message: 'Please fill in all fields' });
+                return res.status(400).json('Please fill in all fields');
             }
 
             const user = await User.findOne({ email });
             if (user) {
-                return res.status(400).json({ message: 'User with this email already exists' });
+                return res.status(400).json('User with this email already exists');
             }
 
             const hashPassword = await bcrypt.hash(password, 5);
@@ -92,7 +92,7 @@ class UserController {
                 return res.status(400).json('Ваша корзина пуста')
             }
 
-            const data = await LightStore.find({ id: wishList })
+            const data = await Item.find({ _id: wishList })
             res.status(200).json({ data })
         } catch (e) {
             res.status(400).json('Ошибка при поиске списка желаемого')
@@ -117,11 +117,11 @@ class UserController {
             const { id } = req.user
             const { basket } = await User.findById(id).select('basket');
 
-            if (!basket) {
+            if (!Object.keys(basket).length) {
                 return res.status(400).json('Ваша корзина пуста')
             }
 
-            let data = await LightStore.find({ id: basket })
+            let data = await Item.find({ _id: Object.keys(basket) })
             res.status(200).json({ data })
         } catch (e) {
             res.status(404).json('Ошибка при поиске корзины')
@@ -137,12 +137,14 @@ class UserController {
 
             const newOrder = new Order({ userId: id, phone: phone, name: name, info: info, items: basket, status: 3 });
             newOrder.save();
+
+            res.status(200).json('Заказ создан')
         } catch (e) {
             res.status(400).json('Ошибка при создании заказа')
         }
     }
 
-    async getOrders(req, res) {
+    async getOrders(_, res) {
         try {
             const data = await Order.find();
             res.status(200).json({ data });
@@ -154,10 +156,10 @@ class UserController {
     async updateOrder(req, res) {
         try {
             const { id, status } = req.body
-            
+
             await Order.findOne({ _id: id }).updateOne({ status: status });
 
-            res.status(200);
+            res.status(200).json('Заказ обновлен');
         } catch (e) {
             res.status(400).json('Ошибка при поиске заказов');
         }

@@ -1,16 +1,13 @@
 const Category = require("../models/Category");
 
 class CategoryController {
-    async getAll(req, res) {
+    async getAll(_, res) {
         try {
             const category = await Category.find();
-            const result = [];
-            category.forEach(item => {
-                result.push(item.value);
-            })
-            res.status(200).json(result);
+            res.status(200).json(category);
         } catch (error) {
             console.log(error)
+            res.status(400).json('Ошибка на сервере')
         }
     }
 
@@ -37,7 +34,13 @@ class CategoryController {
     }
 
     async delete(req, res) {
-
+        try {
+            const { id } = req.body
+            await Category.findByIdAndDelete({ _id: id })
+            res.status(200).json('Категория удалена')
+        } catch (error) {
+            res.status(400).json('Ошибка на сервере')
+        }
     }
 }
 
